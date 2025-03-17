@@ -314,8 +314,29 @@ globalThis.LOAD['main'].resolve(async function ({ load }) {
     },
    ]
 
+   const connectPortScanner = [
+    'Port Scanner',
+    async function (menu) {
+     // Create the configuration UI
+     const configPane = components.doc({
+      components,
+      items: [
+       [await createPortScannerUI(), undefined, 'Port Scanner Configuration'],
+      ],
+      name: 'Port Scanner',
+      onClose() {
+       configView.close()
+      },
+     })
+
+     const configView = v(configPane)
+     menu.element.appendChild(configView.element)
+     autoScroll(content)
+    },
+   ]
+
    const connectMenu = {
-    items: [connectLocalStorage, connectKeyValueStorage],
+    items: [connectLocalStorage, connectKeyValueStorage, connectPortScanner],
    }
 
    const connectTo = [
@@ -440,3 +461,174 @@ globalThis.LOAD['main'].resolve(async function ({ load }) {
   },
  }
 })
+
+// Add this function to create the UI
+async function createPortScannerUI() {
+ const container = document.createElement('div')
+ container.style.padding = '10px'
+
+ // IP Range inputs
+ const ipRangeDiv = document.createElement('div')
+ ipRangeDiv.style.marginBottom = '15px'
+
+ const startIpLabel = document.createElement('label')
+ startIpLabel.textContent = 'Start IP: '
+ const startIpInput = document.createElement('input')
+ startIpInput.type = 'text'
+ startIpInput.value = '192.168.1.0'
+ startIpInput.style.marginRight = '10px'
+
+ const endIpLabel = document.createElement('label')
+ endIpLabel.textContent = 'End IP: '
+ const endIpInput = document.createElement('input')
+ endIpInput.type = 'text'
+ endIpInput.value = '192.168.1.255'
+
+ ipRangeDiv.appendChild(startIpLabel)
+ ipRangeDiv.appendChild(startIpInput)
+ ipRangeDiv.appendChild(endIpLabel)
+ ipRangeDiv.appendChild(endIpInput)
+
+ // Port Range inputs
+ const portRangeDiv = document.createElement('div')
+ portRangeDiv.style.marginBottom = '15px'
+
+ const startPortLabel = document.createElement('label')
+ startPortLabel.textContent = 'Start Port: '
+ const startPortInput = document.createElement('input')
+ startPortInput.type = 'number'
+ startPortInput.value = '1500'
+ startPortInput.style.marginRight = '10px'
+
+ const endPortLabel = document.createElement('label')
+ endPortLabel.textContent = 'End Port: '
+ const endPortInput = document.createElement('input')
+ endPortInput.type = 'number'
+ endPortInput.value = '5500'
+
+ portRangeDiv.appendChild(startPortLabel)
+ portRangeDiv.appendChild(startPortInput)
+ portRangeDiv.appendChild(endPortLabel)
+ portRangeDiv.appendChild(endPortInput)
+
+ // Results area
+ const resultsDiv = document.createElement('div')
+ resultsDiv.style.marginTop = '15px'
+ resultsDiv.style.maxHeight = '300px'
+ resultsDiv.style.overflowY = 'auto'
+
+ // Progress area
+ const progressDiv = document.createElement('div')
+ progressDiv.style.marginTop = '10px'
+ progressDiv.style.marginBottom = '10px'
+
+ // Create button container for layout
+ const buttonContainer = document.createElement('div')
+ buttonContainer.style.display = 'flex'
+ buttonContainer.style.gap = '10px'
+ buttonContainer.style.marginTop = '10px'
+
+ let portScanner = null
+ let isScanning = false
+
+ const scanButton = document.createElement('button')
+ scanButton.textContent = 'Start Scan'
+
+ const cancelButton = document.createElement('button')
+ cancelButton.textContent = 'Cancel'
+ cancelButton.style.display = 'none'
+ cancelButton.style.backgroundColor = '#ff4444'
+ cancelButton.style.color = 'white'
+
+ scanButton.onclick = async () => {
+  if (isScanning) return
+
+  resultsDiv.innerHTML = ''
+  scanButton.disabled = true
+  cancelButton.style.display = 'block'
+  cancelButton.disabled = false
+  scanButton.textContent = 'Scanning...'
+  progressDiv.textContent = 'Starting scan...'
+  isScanning = true
+
+  try {
+   portScanner = await load('modules/port-scanner/index')
+   const results = await portScanner.scanRange(
+    startIpInput.value,
+    endIpInput.value,
+    parseInt(startPortInput.value),
+    parseInt(endPortInput.value),
+    (progress) => {
+     if (!isScanning) return
+     progressDiv.textContent = `Scanning ${progress.currentIp}:${progress.currentPort} - Found: ${progress.found}`
+    }
+   )
+
+   if (!isScanning) return
+
+   // Display results
+   results.forEach((result) => {
+    const resultItem = document.createElement('div')
+    resultItem.textContent = `Found open port: ${result.ip}:${result.port}`
+    resultItem.style.color = '#00ff00'
+    resultsDiv.appendChild(resultItem)
+   })
+
+   if (results.length === 0) {
+    const noResults = document.createElement('div')
+    noResults.textContent = 'No open ports found in the specified range'
+    noResults.style.color = '#ff9900'
+    resultsDiv.appendChild(noResults)
+   }
+  } catch (error) {
+   const errorDiv = document.createElement('div')
+   if (error.message === 'SCAN_CANCELLED') {
+    errorDiv.textContent = 'Scan cancelled by user'
+    errorDiv.style.color = '#ff9900'
+   } else {
+    errorDiv.textContent = `Error: ${error.message}`
+    errorDiv.style.color = '#ff0000'
+   }
+   resultsDiv.appendChild(errorDiv)
+  } finally {
+   isScanning = false
+   scanButton.disabled = false
+   scanButton.textContent = 'Start Scan'
+   cancelButton.style.display = 'none'
+   if (!progressDiv.textContent.includes('cancelled')) {
+    progressDiv.textContent = 'Scan complete'
+   }
+   if (portScanner) {
+    portScanner = null
+   }
+  }
+ }
+
+ cancelButton.onclick = () => {
+  if (!portScanner || !isScanning) return
+
+  cancelButton.disabled = true
+  cancelButton.textContent = 'Cancelling...'
+  progressDiv.textContent = 'Cancelling scan...'
+
+  try {
+   portScanner.cancelScan()
+   isScanning = false
+  } catch (error) {
+   console.error('Error cancelling scan:', error)
+  }
+ }
+
+ // Add buttons to button container
+ buttonContainer.appendChild(scanButton)
+ buttonContainer.appendChild(cancelButton)
+
+ // Update the container elements
+ container.appendChild(ipRangeDiv)
+ container.appendChild(portRangeDiv)
+ container.appendChild(buttonContainer)
+ container.appendChild(progressDiv)
+ container.appendChild(resultsDiv)
+
+ return container
+}
