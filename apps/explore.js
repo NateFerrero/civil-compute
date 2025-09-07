@@ -73,6 +73,13 @@ registerComponent(
         
         async function openInFrame(name) {
           console.log('Opening iframe for:', name);
+          
+          // Check if this iframe is already open to prevent duplicates
+          if (openFrameSet.includes(name)) {
+            console.log('Iframe already open, skipping:', name);
+            return;
+          }
+          
           openFrameSet = [...openFrameSet, name];
           console.log('Current openFrameSet:', openFrameSet);
           async function onTabClose() {
