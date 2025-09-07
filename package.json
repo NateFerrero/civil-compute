@@ -1,0 +1,10 @@
+{
+  "name": "@tagmein/civil-compute",
+  "version": "0.0.0",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@tagmein/civil-memory": "^0.1.5"
+  }
+}
