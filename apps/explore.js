@@ -71,12 +71,12 @@ registerComponent(
           );
         }
         
-        async function openInFrame(name) {
-          console.log('Opening iframe for:', name);
+        async function openInFrame(name, isRestoration = false) {
+          console.log('Opening iframe for:', name, 'isRestoration:', isRestoration);
           
-          // Check if this iframe is already open to prevent duplicates
-          if (openFrameSet.includes(name)) {
-            console.log('Iframe already open, skipping:', name);
+          // Check if this iframe is already open to prevent duplicates during restoration
+          if (isRestoration && openFrameSet.includes(name)) {
+            console.log('Iframe already open, skipping restoration:', name);
             return;
           }
           
@@ -465,7 +465,7 @@ registerComponent(
           
           for (const item of lastFrameSet) {
             console.log('About to restore iframe item:', item);
-            await openInFrame(item);
+            await openInFrame(item, true); // Pass true for restoration
             console.log('Finished restoring iframe item:', item);
             console.log('openFrameSet after restoring item:', openFrameSet);
             // Add a small delay between iframe restorations
