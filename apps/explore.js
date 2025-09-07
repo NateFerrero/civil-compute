@@ -124,32 +124,8 @@ registerComponent(
           iframe.src = name;
           iframe.title = `Frame: ${name}`;
           
-          // Add loading indicator
-          const loadingDiv = document.createElement("div");
-          loadingDiv.style.cssText = `
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            background: #f5f5f5;
-            color: #666;
-            font-family: monospace;
-          `;
-          loadingDiv.textContent = "Loading...";
-          
-          iframeContainer.appendChild(loadingDiv);
-          
-          // Handle iframe load
-          iframe.onload = () => {
-            iframeContainer.removeChild(loadingDiv);
-            iframeContainer.appendChild(iframe);
-          };
-          
-          // Handle iframe error
-          iframe.onerror = () => {
-            loadingDiv.textContent = "Failed to load content";
-            loadingDiv.style.color = "#d32f2f";
-          };
+          // Add iframe directly to container
+          iframeContainer.appendChild(iframe);
           
           itemTools.printer.html`
             <h3>Frame View</h3>
