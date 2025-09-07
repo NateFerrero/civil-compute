@@ -140,6 +140,20 @@ registerComponent(
           console.log('Window location origin:', window.location.origin);
           console.log('Name parameter:', name);
           
+          // Check if this is a text file that shouldn't be loaded in iframe
+          const isTextFile = name.endsWith('.js') || name.endsWith('.txt') || name.endsWith('.json') || name.endsWith('.md');
+          if (isTextFile) {
+            console.log('Detected text file, showing content instead of iframe');
+            iframeContainer.innerHTML = `
+              <div style="padding: 20px; text-align: center; color: #666;">
+                <p>This is a text file: ${name}</p>
+                <p>Text files cannot be displayed in iframes.</p>
+                <p>Use "View item" instead to see the content.</p>
+              </div>
+            `;
+            return;
+          }
+          
           // Add error handling to iframe
           iframe.onerror = function() {
             console.error('Iframe failed to load:', iframeUrl);
