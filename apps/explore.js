@@ -71,7 +71,9 @@ registerComponent(
         }
         
         async function openInFrame(name) {
+          console.log('Opening iframe for:', name);
           openFrameSet = [...openFrameSet, name];
+          console.log('Current openFrameSet:', openFrameSet);
           async function onTabClose() {
             openFrameSet = openFrameSet.filter((x) => x !== name);
             await saveLastSet();
@@ -164,6 +166,9 @@ registerComponent(
         let openLastSet =
           (await activeConnection.getItem("@explore#openLastSet")) === "open";
         async function saveLastSet() {
+          console.log('Saving last set. openLastSet:', openLastSet);
+          console.log('openSet:', openSet);
+          console.log('openFrameSet:', openFrameSet);
           if (openLastSet) {
             await activeConnection.setItem(
               "@explore#lastSet",
@@ -173,9 +178,11 @@ registerComponent(
               "@explore#lastFrameSet",
               JSON.stringify(openFrameSet)
             );
+            console.log('Saved both sets to storage');
           } else {
             await activeConnection.removeItem("@explore#lastSet");
             await activeConnection.removeItem("@explore#lastFrameSet");
+            console.log('Removed both sets from storage');
           }
         }
         function itemFilter(item) {
@@ -377,9 +384,11 @@ registerComponent(
           reloadView
         );
         if (openLastSet) {
+          console.log('Restoring last set. openLastSet:', openLastSet);
           const lastSet = JSON.parse(
             (await activeConnection.getItem("@explore#lastSet")) ?? "[]"
           );
+          console.log('Restoring regular items:', lastSet);
           for (const item of lastSet) {
             await openItem(item);
           }
@@ -387,9 +396,12 @@ registerComponent(
           const lastFrameSet = JSON.parse(
             (await activeConnection.getItem("@explore#lastFrameSet")) ?? "[]"
           );
+          console.log('Restoring iframe items:', lastFrameSet);
           for (const item of lastFrameSet) {
             await openInFrame(item);
           }
+        } else {
+          console.log('Not restoring - openLastSet is false');
         }
         await reloadView();
         const e = {
