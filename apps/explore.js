@@ -127,12 +127,15 @@ registerComponent(
           // Add iframe directly to container
           iframeContainer.appendChild(iframe);
           
-          itemTools.printer.html`
+          const frameContent = itemTools.printer.html`
             <h3>Frame View</h3>
             <h4>${toHtml(JSON.stringify(name))}</h4>
+            <div class="iframe-container"></div>
           `;
           
-          itemTools.element.appendChild(iframeContainer);
+          // Find the iframe container div and add the iframe to it
+          const containerDiv = frameContent.element.querySelector('.iframe-container');
+          containerDiv.appendChild(iframeContainer);
           
           // Add controls
           const controls = document.createElement("div");
@@ -157,7 +160,7 @@ registerComponent(
           
           controls.appendChild(refreshBtn);
           controls.appendChild(newTabBtn);
-          itemTools.element.appendChild(controls);
+          containerDiv.appendChild(controls);
         }
         let showSystemEntries = false;
         let openSet = [];
