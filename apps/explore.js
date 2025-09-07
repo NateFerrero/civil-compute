@@ -107,6 +107,9 @@ registerComponent(
             <h4>${toHtml(JSON.stringify(name))}</h4>
           `;
           
+          console.log('Created iframe tab for:', name);
+          console.log('Tab element:', itemTools.element);
+          
           // Create iframe container
           const iframeContainer = document.createElement("div");
           iframeContainer.style.cssText = `
@@ -409,6 +412,10 @@ registerComponent(
             // Add a small delay between iframe restorations
             await new Promise(resolve => setTimeout(resolve, 50));
           }
+          
+          // Debug: Check what tabs are visible after restoration
+          console.log('All tabs after restoration:', document.querySelectorAll('.tabs button'));
+          console.log('Tab count:', document.querySelectorAll('.tabs button').length);
         } else {
           console.log('Not restoring - openLastSet is false');
         }
