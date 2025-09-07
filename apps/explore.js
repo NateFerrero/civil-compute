@@ -82,8 +82,18 @@ registerComponent(
           
           // For manual opening, check if tab already exists in DOM
           if (!isRestoration) {
+            // Use a more robust way to find existing tabs
+            const allTabs = document.querySelectorAll('[data-tab-title]');
             const tabTitle = `Frame: ${JSON.stringify(name)}`;
-            const existingTab = document.querySelector(`[data-tab-title="${tabTitle}"]`);
+            let existingTab = null;
+            
+            for (const tab of allTabs) {
+              if (tab.getAttribute('data-tab-title') === tabTitle) {
+                existingTab = tab;
+                break;
+              }
+            }
+            
             if (existingTab) {
               console.log('Iframe tab already exists in DOM, skipping:', name);
               return;
