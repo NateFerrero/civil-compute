@@ -69,6 +69,120 @@ registerComponent(
             itemTools.tab("Notes").element
           );
         }
+        
+        async function openInFrame(name) {
+          openSet = [...openSet, name];
+          async function onTabClose() {
+            openSet = openSet.filter((x) => x !== name);
+            await saveLastSet();
+          }
+          await saveLastSet();
+          
+          async function onTabClick() {
+            const element = itemTools.element.parentElement;
+            element.scrollIntoView({ behavior: "smooth", block: "center" });
+            element.style.boxShadow = "inset 0 0 4px 4px #ff0";
+            await new Promise((r) => setTimeout(r, 140));
+            element.style.boxShadow = "inset 0 0 4px 4px #fe0";
+            await new Promise((r) => setTimeout(r, 130));
+            element.style.boxShadow = "inset 0 0 4px 4px #fd0";
+            await new Promise((r) => setTimeout(r, 120));
+            element.style.boxShadow = "inset 0 0 4px 4px #fc0";
+            await new Promise((r) => setTimeout(r, 110));
+            element.style.boxShadow = "inset 0 0 4px 4px #fb0";
+            await new Promise((r) => setTimeout(r, 100));
+            element.style.boxShadow = "inset 0 0 4px 4px #fa0";
+            await new Promise((r) => setTimeout(r, 1000));
+            element.style.boxShadow = "";
+          }
+          
+          const itemTools = toolbarRef.tab(
+            `Frame: ${JSON.stringify(name)}`,
+            onTabClose,
+            onTabClick
+          );
+          
+          // Create iframe container
+          const iframeContainer = document.createElement("div");
+          iframeContainer.style.cssText = `
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+          `;
+          
+          // Create iframe
+          const iframe = document.createElement("iframe");
+          iframe.style.cssText = `
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+          `;
+          iframe.src = name;
+          iframe.title = `Frame: ${name}`;
+          
+          // Add loading indicator
+          const loadingDiv = document.createElement("div");
+          loadingDiv.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background: #f5f5f5;
+            color: #666;
+            font-family: monospace;
+          `;
+          loadingDiv.textContent = "Loading...";
+          
+          iframeContainer.appendChild(loadingDiv);
+          
+          // Handle iframe load
+          iframe.onload = () => {
+            iframeContainer.removeChild(loadingDiv);
+            iframeContainer.appendChild(iframe);
+          };
+          
+          // Handle iframe error
+          iframe.onerror = () => {
+            loadingDiv.textContent = "Failed to load content";
+            loadingDiv.style.color = "#d32f2f";
+          };
+          
+          itemTools.printer.html`
+            <h3>Frame View</h3>
+            <h4>${toHtml(JSON.stringify(name))}</h4>
+          `;
+          
+          itemTools.element.appendChild(iframeContainer);
+          
+          // Add controls
+          const controls = document.createElement("div");
+          controls.style.cssText = `
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+          `;
+          
+          const refreshBtn = document.createElement("button");
+          refreshBtn.textContent = "Refresh";
+          refreshBtn.onclick = () => {
+            iframe.src = iframe.src;
+          };
+          
+          const newTabBtn = document.createElement("button");
+          newTabBtn.textContent = "Open in New Tab";
+          newTabBtn.onclick = () => {
+            open(name, "_blank");
+          };
+          
+          controls.appendChild(refreshBtn);
+          controls.appendChild(newTabBtn);
+          itemTools.element.appendChild(controls);
+        }
         let showSystemEntries = false;
         let openSet = [];
         let openLastSet =
@@ -144,6 +258,7 @@ registerComponent(
         const actions = [
           "",
           "open in new tab",
+          "open in frame",
           "view",
           "edit",
           "copy",
@@ -166,6 +281,9 @@ registerComponent(
               return;
             case "open in new tab":
               open(item.name, "_blank");
+              break;
+            case "open in frame":
+              openInFrame(item.name);
               break;
             case "view":
               openItem(item.name);
