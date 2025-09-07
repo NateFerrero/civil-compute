@@ -74,10 +74,25 @@ registerComponent(
         async function openInFrame(name, isRestoration = false) {
           console.log('Opening iframe for:', name, 'isRestoration:', isRestoration);
           
-          // Check if this iframe is already open to prevent duplicates during restoration
-          if (isRestoration && openFrameSet.includes(name)) {
-            console.log('Iframe already open, skipping restoration:', name);
-            return;
+          // During restoration, check if tab actually exists in DOM, not just in openFrameSet
+          if (isRestoration) {
+            const tabTitle = `Frame: ${JSON.stringify(name)}`;
+            const allTabs = document.querySelectorAll('[data-tab-title]');
+            let existingTab = null;
+            
+            for (const tab of allTabs) {
+              if (tab.getAttribute('data-tab-title') === tabTitle) {
+                existingTab = tab;
+                break;
+              }
+            }
+            
+            if (existingTab) {
+              console.log('Iframe tab already exists in DOM, skipping restoration:', name);
+              return;
+            } else {
+              console.log('Iframe not in DOM, will create during restoration:', name);
+            }
           }
           
           // For manual opening, check if tab already exists in DOM
