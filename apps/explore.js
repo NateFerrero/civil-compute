@@ -69,18 +69,140 @@ registerComponent(
             itemTools.tab("Notes").element
           );
         }
+        
+        async function openInFrame(name) {
+          // Add to openFrameSet only if not already present
+          if (!openFrameSet.includes(name)) {
+            openFrameSet = [...openFrameSet, name];
+          }
+          async function onTabClose() {
+            openFrameSet = openFrameSet.filter((x) => x !== name);
+            await saveLastSet();
+          }
+          await saveLastSet();
+          
+          async function onTabClick() {
+            const element = itemTools.element.parentElement;
+            element.scrollIntoView({ behavior: "smooth", block: "center" });
+            element.style.boxShadow = "inset 0 0 4px 4px #ff0";
+            await new Promise((r) => setTimeout(r, 140));
+            element.style.boxShadow = "inset 0 0 4px 4px #fe0";
+            await new Promise((r) => setTimeout(r, 130));
+            element.style.boxShadow = "inset 0 0 4px 4px #fd0";
+            await new Promise((r) => setTimeout(r, 120));
+            element.style.boxShadow = "inset 0 0 4px 4px #fc0";
+            await new Promise((r) => setTimeout(r, 110));
+            element.style.boxShadow = "inset 0 0 4px 4px #fb0";
+            await new Promise((r) => setTimeout(r, 100));
+            element.style.boxShadow = "inset 0 0 4px 4px #fa0";
+            await new Promise((r) => setTimeout(r, 1000));
+            element.style.boxShadow = "";
+          }
+          
+          const itemTools = toolbarRef.tab(
+            `Frame: ${JSON.stringify(name)}`,
+            onTabClose,
+            onTabClick
+          ).printer.html`
+            <h3>Frame View</h3>
+            <h4>${toHtml(JSON.stringify(name))}</h4>
+          `;
+          
+          // Create iframe container
+          const iframeContainer = document.createElement("div");
+          iframeContainer.style.cssText = `
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+          `;
+          
+          // Create iframe
+          const iframe = document.createElement("iframe");
+          iframe.style.cssText = `
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+          `;
+          
+          // Construct proper URL for iframe
+          const iframeUrl = name.startsWith('http') ? name : `${window.location.origin}/${name}`;
+          iframe.src = iframeUrl;
+          iframe.title = `Frame: ${name}`;
+          
+          // Add error handling to iframe
+          iframe.onerror = function() {
+            console.error('Iframe failed to load:', iframeUrl);
+            iframeContainer.innerHTML = `
+              <div style="padding: 20px; text-align: center; color: #666;">
+                <p>Failed to load: ${iframeUrl}</p>
+              </div>
+            `;
+          };
+          
+          // Add iframe directly to container
+          iframeContainer.appendChild(iframe);
+          
+          // Add iframe container to the itemTools element
+          itemTools.element.appendChild(iframeContainer);
+          
+          // Add controls
+          const controls = document.createElement("div");
+          controls.style.cssText = `
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+          `;
+          
+          const refreshBtn = document.createElement("button");
+          refreshBtn.textContent = "Refresh";
+          refreshBtn.onclick = () => {
+            iframe.src = iframe.src;
+          };
+          
+          const newTabBtn = document.createElement("button");
+          newTabBtn.textContent = "Open in New Tab";
+          newTabBtn.onclick = () => {
+            open(name, "_blank");
+          };
+          
+          controls.appendChild(refreshBtn);
+          controls.appendChild(newTabBtn);
+          itemTools.element.appendChild(controls);
+        }
         let showSystemEntries = false;
         let openSet = [];
+        let openFrameSet = [];
         let openLastSet =
           (await activeConnection.getItem("@explore#openLastSet")) === "open";
+        
+        // Initialize openFrameSet from storage if openLastSet is enabled
+        if (openLastSet) {
+          const storedFrameSet = JSON.parse(
+            (await activeConnection.getItem("@explore#lastFrameSet")) ?? "[]"
+          );
+          // Clean the stored data - remove duplicates and invalid entries
+          openFrameSet = [...new Set(storedFrameSet)].filter(item => 
+            item && typeof item === 'string' && item.trim() !== ''
+          );
+        }
         async function saveLastSet() {
           if (openLastSet) {
             await activeConnection.setItem(
               "@explore#lastSet",
               JSON.stringify(openSet)
             );
+            await activeConnection.setItem(
+              "@explore#lastFrameSet",
+              JSON.stringify(openFrameSet)
+            );
           } else {
             await activeConnection.removeItem("@explore#lastSet");
+            await activeConnection.removeItem("@explore#lastFrameSet");
           }
         }
         function itemFilter(item) {
@@ -144,6 +266,7 @@ registerComponent(
         const actions = [
           "",
           "open in new tab",
+          "open in frame",
           "view",
           "edit",
           "copy",
@@ -160,12 +283,14 @@ registerComponent(
         ];
         async function onAction(item, e) {
           const value = e.target.value;
-          console.log("ACTION", value);
           switch (value) {
             case "":
               return;
             case "open in new tab":
               open(item.name, "_blank");
+              break;
+            case "open in frame":
+              openInFrame(item.name);
               break;
             case "view":
               openItem(item.name);
@@ -277,6 +402,8 @@ registerComponent(
           (title) => toolbarRef.tab(title),
           reloadView
         );
+        await reloadView();
+        
         if (openLastSet) {
           const lastSet = JSON.parse(
             (await activeConnection.getItem("@explore#lastSet")) ?? "[]"
@@ -284,8 +411,23 @@ registerComponent(
           for (const item of lastSet) {
             await openItem(item);
           }
+          
+          // Add a small delay before restoring iframe tabs
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          const lastFrameSet = JSON.parse(
+            (await activeConnection.getItem("@explore#lastFrameSet")) ?? "[]"
+          );
+          
+          for (const item of lastFrameSet) {
+            await openInFrame(item);
+            // Add a small delay between iframe restorations
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          
+          // Debug: Check what tabs are visible after restoration
+          const allTabs = document.querySelectorAll('[data-tab-title]');
         }
-        await reloadView();
         const e = {
           element,
         };
