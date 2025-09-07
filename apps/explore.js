@@ -247,8 +247,11 @@ registerComponent(
           const storedFrameSet = JSON.parse(
             (await activeConnection.getItem("@explore#lastFrameSet")) ?? "[]"
           );
-          openFrameSet = storedFrameSet;
-          console.log('Restored openFrameSet from storage:', openFrameSet);
+          // Clean the stored data - remove duplicates and invalid entries
+          openFrameSet = [...new Set(storedFrameSet)].filter(item => 
+            item && typeof item === 'string' && item.trim() !== ''
+          );
+          console.log('Cleaned and restored openFrameSet from storage:', openFrameSet);
           console.log('openLastSet is:', openLastSet);
         } else {
           console.log('openLastSet is false, not restoring openFrameSet');
@@ -505,8 +508,10 @@ registerComponent(
           }
           
           // Debug: Check what tabs are visible after restoration
-          console.log('All tabs after restoration:', document.querySelectorAll('.tabs button'));
-          console.log('Tab count:', document.querySelectorAll('.tabs button').length);
+          const allTabs = document.querySelectorAll('[data-tab-title]');
+          console.log('All tabs after restoration:', allTabs);
+          console.log('Tab count:', allTabs.length);
+          console.log('Tab titles:', Array.from(allTabs).map(tab => tab.getAttribute('data-tab-title')));
           console.log('Final openFrameSet:', openFrameSet);
         } else {
           console.log('Not restoring - openLastSet is false');
