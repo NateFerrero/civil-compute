@@ -37,6 +37,7 @@ registerComponent(
             await new Promise((r) => setTimeout(r, 120));
             element.style.boxShadow = "inset 0 0 4px 4px #fc0";
             await new Promise((r) => setTimeout(r, 110));
+            
             element.style.boxShadow = "inset 0 0 4px 4px #fb0";
             await new Promise((r) => setTimeout(r, 100));
             element.style.boxShadow = "inset 0 0 4px 4px #fa0";
@@ -136,6 +137,23 @@ registerComponent(
           iframe.title = `Frame: ${name}`;
           
           console.log('Setting iframe src to:', iframeUrl);
+          console.log('Window location origin:', window.location.origin);
+          console.log('Name parameter:', name);
+          
+          // Add error handling to iframe
+          iframe.onerror = function() {
+            console.error('Iframe failed to load:', iframeUrl);
+            iframeContainer.innerHTML = `
+              <div style="padding: 20px; text-align: center; color: #666;">
+                <p>Failed to load: ${iframeUrl}</p>
+                <p>This might be a text file or the file doesn't exist.</p>
+              </div>
+            `;
+          };
+          
+          iframe.onload = function() {
+            console.log('Iframe loaded successfully:', iframeUrl);
+          };
           
           // Add iframe directly to container
           iframeContainer.appendChild(iframe);
