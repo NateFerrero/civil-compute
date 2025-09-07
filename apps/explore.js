@@ -390,7 +390,9 @@ registerComponent(
           );
           console.log('Restoring regular items:', lastSet);
           for (const item of lastSet) {
+            console.log('About to restore regular item:', item);
             await openItem(item);
+            console.log('Finished restoring regular item:', item);
           }
           
           const lastFrameSet = JSON.parse(
@@ -398,7 +400,9 @@ registerComponent(
           );
           console.log('Restoring iframe items:', lastFrameSet);
           for (const item of lastFrameSet) {
+            console.log('About to restore iframe item:', item);
             await openInFrame(item);
+            console.log('Finished restoring iframe item:', item);
           }
         } else {
           console.log('Not restoring - openLastSet is false');
