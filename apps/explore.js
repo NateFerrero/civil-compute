@@ -82,7 +82,8 @@ registerComponent(
           
           // For manual opening, check if tab already exists in DOM
           if (!isRestoration) {
-            const existingTab = document.querySelector(`[data-tab-title*="Frame: ${JSON.stringify(name)}"]`);
+            const tabTitle = `Frame: ${JSON.stringify(name)}`;
+            const existingTab = document.querySelector(`[data-tab-title="${tabTitle}"]`);
             if (existingTab) {
               console.log('Iframe tab already exists in DOM, skipping:', name);
               return;
@@ -91,7 +92,13 @@ registerComponent(
           
           console.log('Creating iframe tab for:', name);
           
-          openFrameSet = [...openFrameSet, name];
+          // Add to openFrameSet only if not already present
+          if (!openFrameSet.includes(name)) {
+            openFrameSet = [...openFrameSet, name];
+            console.log('Added to openFrameSet:', name);
+          } else {
+            console.log('Already in openFrameSet, not adding:', name);
+          }
           console.log('Current openFrameSet:', openFrameSet);
           async function onTabClose() {
             openFrameSet = openFrameSet.filter((x) => x !== name);
