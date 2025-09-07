@@ -71,9 +71,9 @@ registerComponent(
         }
         
         async function openInFrame(name) {
-          openSet = [...openSet, name];
+          openFrameSet = [...openFrameSet, name];
           async function onTabClose() {
-            openSet = openSet.filter((x) => x !== name);
+            openFrameSet = openFrameSet.filter((x) => x !== name);
             await saveLastSet();
           }
           await saveLastSet();
@@ -164,6 +164,7 @@ registerComponent(
         }
         let showSystemEntries = false;
         let openSet = [];
+        let openFrameSet = [];
         let openLastSet =
           (await activeConnection.getItem("@explore#openLastSet")) === "open";
         async function saveLastSet() {
@@ -172,8 +173,13 @@ registerComponent(
               "@explore#lastSet",
               JSON.stringify(openSet)
             );
+            await activeConnection.setItem(
+              "@explore#lastFrameSet",
+              JSON.stringify(openFrameSet)
+            );
           } else {
             await activeConnection.removeItem("@explore#lastSet");
+            await activeConnection.removeItem("@explore#lastFrameSet");
           }
         }
         function itemFilter(item) {
@@ -380,6 +386,13 @@ registerComponent(
           );
           for (const item of lastSet) {
             await openItem(item);
+          }
+          
+          const lastFrameSet = JSON.parse(
+            (await activeConnection.getItem("@explore#lastFrameSet")) ?? "[]"
+          );
+          for (const item of lastFrameSet) {
+            await openInFrame(item);
           }
         }
         await reloadView();
