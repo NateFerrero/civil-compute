@@ -395,6 +395,9 @@ registerComponent(
             console.log('Finished restoring regular item:', item);
           }
           
+          // Add a small delay before restoring iframe tabs
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
           const lastFrameSet = JSON.parse(
             (await activeConnection.getItem("@explore#lastFrameSet")) ?? "[]"
           );
@@ -403,6 +406,8 @@ registerComponent(
             console.log('About to restore iframe item:', item);
             await openInFrame(item);
             console.log('Finished restoring iframe item:', item);
+            // Add a small delay between iframe restorations
+            await new Promise(resolve => setTimeout(resolve, 50));
           }
         } else {
           console.log('Not restoring - openLastSet is false');
