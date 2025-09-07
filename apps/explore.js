@@ -444,10 +444,13 @@ registerComponent(
             (await activeConnection.getItem("@explore#lastFrameSet")) ?? "[]"
           );
           console.log('Restoring iframe items:', lastFrameSet);
+          console.log('Current openFrameSet before restoration:', openFrameSet);
+          
           for (const item of lastFrameSet) {
             console.log('About to restore iframe item:', item);
             await openInFrame(item);
             console.log('Finished restoring iframe item:', item);
+            console.log('openFrameSet after restoring item:', openFrameSet);
             // Add a small delay between iframe restorations
             await new Promise(resolve => setTimeout(resolve, 50));
           }
@@ -455,6 +458,7 @@ registerComponent(
           // Debug: Check what tabs are visible after restoration
           console.log('All tabs after restoration:', document.querySelectorAll('.tabs button'));
           console.log('Tab count:', document.querySelectorAll('.tabs button').length);
+          console.log('Final openFrameSet:', openFrameSet);
         } else {
           console.log('Not restoring - openLastSet is false');
         }
