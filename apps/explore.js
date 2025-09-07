@@ -203,8 +203,18 @@ registerComponent(
         let showSystemEntries = false;
         let openSet = [];
         let openFrameSet = [];
+        console.log('Initialized openFrameSet:', openFrameSet);
         let openLastSet =
           (await activeConnection.getItem("@explore#openLastSet")) === "open";
+        
+        // Initialize openFrameSet from storage if openLastSet is enabled
+        if (openLastSet) {
+          const storedFrameSet = JSON.parse(
+            (await activeConnection.getItem("@explore#lastFrameSet")) ?? "[]"
+          );
+          openFrameSet = storedFrameSet;
+          console.log('Restored openFrameSet from storage:', openFrameSet);
+        }
         async function saveLastSet() {
           console.log('Saving last set. openLastSet:', openLastSet);
           console.log('openSet:', openSet);
