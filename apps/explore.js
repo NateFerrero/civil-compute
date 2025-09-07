@@ -221,6 +221,9 @@ registerComponent(
           );
           openFrameSet = storedFrameSet;
           console.log('Restored openFrameSet from storage:', openFrameSet);
+          console.log('openLastSet is:', openLastSet);
+        } else {
+          console.log('openLastSet is false, not restoring openFrameSet');
         }
         async function saveLastSet() {
           console.log('Saving last set. openLastSet:', openLastSet);
@@ -462,6 +465,7 @@ registerComponent(
           );
           console.log('Restoring iframe items:', lastFrameSet);
           console.log('Current openFrameSet before restoration:', openFrameSet);
+          console.log('openLastSet during restoration:', openLastSet);
           
           for (const item of lastFrameSet) {
             console.log('About to restore iframe item:', item);
