@@ -386,6 +386,8 @@ registerComponent(
           (title) => toolbarRef.tab(title),
           reloadView
         );
+        await reloadView();
+        
         if (openLastSet) {
           console.log('Restoring last set. openLastSet:', openLastSet);
           const lastSet = JSON.parse(
@@ -419,7 +421,6 @@ registerComponent(
         } else {
           console.log('Not restoring - openLastSet is false');
         }
-        await reloadView();
         const e = {
           element,
         };
