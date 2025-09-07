@@ -129,8 +129,13 @@ registerComponent(
             border: none;
             background: white;
           `;
-          iframe.src = name;
+          
+          // Construct proper URL for iframe
+          const iframeUrl = name.startsWith('http') ? name : `${window.location.origin}/${name}`;
+          iframe.src = iframeUrl;
           iframe.title = `Frame: ${name}`;
+          
+          console.log('Setting iframe src to:', iframeUrl);
           
           // Add iframe directly to container
           iframeContainer.appendChild(iframe);
