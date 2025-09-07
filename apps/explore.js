@@ -100,7 +100,10 @@ registerComponent(
             `Frame: ${JSON.stringify(name)}`,
             onTabClose,
             onTabClick
-          );
+          ).printer.html`
+            <h3>Frame View</h3>
+            <h4>${toHtml(JSON.stringify(name))}</h4>
+          `;
           
           // Create iframe container
           const iframeContainer = document.createElement("div");
@@ -127,15 +130,8 @@ registerComponent(
           // Add iframe directly to container
           iframeContainer.appendChild(iframe);
           
-          const frameContent = itemTools.printer.html`
-            <h3>Frame View</h3>
-            <h4>${toHtml(JSON.stringify(name))}</h4>
-            <div class="iframe-container"></div>
-          `;
-          
-          // Find the iframe container div and add the iframe to it
-          const containerDiv = frameContent.element.querySelector('.iframe-container');
-          containerDiv.appendChild(iframeContainer);
+          // Add iframe container to the itemTools element
+          itemTools.element.appendChild(iframeContainer);
           
           // Add controls
           const controls = document.createElement("div");
@@ -160,7 +156,7 @@ registerComponent(
           
           controls.appendChild(refreshBtn);
           controls.appendChild(newTabBtn);
-          containerDiv.appendChild(controls);
+          itemTools.element.appendChild(controls);
         }
         let showSystemEntries = false;
         let openSet = [];
