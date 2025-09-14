@@ -37,6 +37,7 @@ registerComponent(
             await new Promise((r) => setTimeout(r, 120));
             element.style.boxShadow = "inset 0 0 4px 4px #fc0";
             await new Promise((r) => setTimeout(r, 110));
+            
             element.style.boxShadow = "inset 0 0 4px 4px #fb0";
             await new Promise((r) => setTimeout(r, 100));
             element.style.boxShadow = "inset 0 0 4px 4px #fa0";
@@ -69,18 +70,225 @@ registerComponent(
             itemTools.tab("Notes").element
           );
         }
+        
+        async function openInFrame(name, isRestoration = false) {
+          console.log('Opening iframe for:', name, 'isRestoration:', isRestoration);
+          
+          // During restoration, check if tab actually exists in DOM, not just in openFrameSet
+          if (isRestoration) {
+            const tabTitle = `Frame: ${JSON.stringify(name)}`;
+            const allTabs = document.querySelectorAll('[data-tab-title]');
+            let existingTab = null;
+            
+            for (const tab of allTabs) {
+              if (tab.getAttribute('data-tab-title') === tabTitle) {
+                existingTab = tab;
+                break;
+              }
+            }
+            
+            if (existingTab) {
+              console.log('Iframe tab already exists in DOM, skipping restoration:', name);
+              return;
+            } else {
+              console.log('Iframe not in DOM, will create during restoration:', name);
+            }
+          }
+          
+          // For manual opening, check if tab already exists in DOM
+          if (!isRestoration) {
+            // Use a more robust way to find existing tabs
+            const allTabs = document.querySelectorAll('[data-tab-title]');
+            const tabTitle = `Frame: ${JSON.stringify(name)}`;
+            let existingTab = null;
+            
+            for (const tab of allTabs) {
+              if (tab.getAttribute('data-tab-title') === tabTitle) {
+                existingTab = tab;
+                break;
+              }
+            }
+            
+            if (existingTab) {
+              console.log('Iframe tab already exists in DOM, skipping:', name);
+              return;
+            }
+          }
+          
+          console.log('Creating iframe tab for:', name);
+          
+          // Add to openFrameSet only if not already present
+          if (!openFrameSet.includes(name)) {
+            openFrameSet = [...openFrameSet, name];
+            console.log('Added to openFrameSet:', name);
+          } else {
+            console.log('Already in openFrameSet, not adding:', name);
+          }
+          console.log('Current openFrameSet:', openFrameSet);
+          async function onTabClose() {
+            openFrameSet = openFrameSet.filter((x) => x !== name);
+            await saveLastSet();
+          }
+          await saveLastSet();
+          
+          async function onTabClick() {
+            const element = itemTools.element.parentElement;
+            element.scrollIntoView({ behavior: "smooth", block: "center" });
+            element.style.boxShadow = "inset 0 0 4px 4px #ff0";
+            await new Promise((r) => setTimeout(r, 140));
+            element.style.boxShadow = "inset 0 0 4px 4px #fe0";
+            await new Promise((r) => setTimeout(r, 130));
+            element.style.boxShadow = "inset 0 0 4px 4px #fd0";
+            await new Promise((r) => setTimeout(r, 120));
+            element.style.boxShadow = "inset 0 0 4px 4px #fc0";
+            await new Promise((r) => setTimeout(r, 110));
+            element.style.boxShadow = "inset 0 0 4px 4px #fb0";
+            await new Promise((r) => setTimeout(r, 100));
+            element.style.boxShadow = "inset 0 0 4px 4px #fa0";
+            await new Promise((r) => setTimeout(r, 1000));
+            element.style.boxShadow = "";
+          }
+          
+          const itemTools = toolbarRef.tab(
+            `Frame: ${JSON.stringify(name)}`,
+            onTabClose,
+            onTabClick
+          ).printer.html`
+            <h3>Frame View</h3>
+            <h4>${toHtml(JSON.stringify(name))}</h4>
+          `;
+          
+          console.log('Created iframe tab for:', name);
+          console.log('Tab element:', itemTools.element);
+          
+          // Create iframe container
+          const iframeContainer = document.createElement("div");
+          iframeContainer.style.cssText = `
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+          `;
+          
+          // Create iframe
+          const iframe = document.createElement("iframe");
+          iframe.style.cssText = `
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+          `;
+          
+          // Construct proper URL for iframe
+          const iframeUrl = name.startsWith('http') ? name : `${window.location.origin}/${name}`;
+          iframe.src = iframeUrl;
+          iframe.title = `Frame: ${name}`;
+          
+          console.log('Setting iframe src to:', iframeUrl);
+          console.log('Window location origin:', window.location.origin);
+          console.log('Name parameter:', name);
+          
+          // Check if this is a text file that shouldn't be loaded in iframe
+          const isTextFile = name.endsWith('.js') || name.endsWith('.txt') || name.endsWith('.json') || name.endsWith('.md');
+          if (isTextFile) {
+            console.log('Detected text file, showing content instead of iframe');
+            iframeContainer.innerHTML = `
+              <div style="padding: 20px; text-align: center; color: #666;">
+                <p>This is a text file: ${name}</p>
+                <p>Text files cannot be displayed in iframes.</p>
+                <p>Use "View item" instead to see the content.</p>
+              </div>
+            `;
+            return;
+          }
+          
+          // Add error handling to iframe
+          iframe.onerror = function() {
+            console.error('Iframe failed to load:', iframeUrl);
+            iframeContainer.innerHTML = `
+              <div style="padding: 20px; text-align: center; color: #666;">
+                <p>Failed to load: ${iframeUrl}</p>
+                <p>This might be a text file or the file doesn't exist.</p>
+              </div>
+            `;
+          };
+          
+          iframe.onload = function() {
+            console.log('Iframe loaded successfully:', iframeUrl);
+          };
+          
+          // Add iframe directly to container
+          iframeContainer.appendChild(iframe);
+          
+          // Add iframe container to the itemTools element
+          itemTools.element.appendChild(iframeContainer);
+          
+          // Add controls
+          const controls = document.createElement("div");
+          controls.style.cssText = `
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+          `;
+          
+          const refreshBtn = document.createElement("button");
+          refreshBtn.textContent = "Refresh";
+          refreshBtn.onclick = () => {
+            iframe.src = iframe.src;
+          };
+          
+          const newTabBtn = document.createElement("button");
+          newTabBtn.textContent = "Open in New Tab";
+          newTabBtn.onclick = () => {
+            open(name, "_blank");
+          };
+          
+          controls.appendChild(refreshBtn);
+          controls.appendChild(newTabBtn);
+          itemTools.element.appendChild(controls);
+        }
         let showSystemEntries = false;
         let openSet = [];
+        let openFrameSet = [];
+        console.log('Initialized openFrameSet:', openFrameSet);
         let openLastSet =
           (await activeConnection.getItem("@explore#openLastSet")) === "open";
+        
+        // Initialize openFrameSet from storage if openLastSet is enabled
+        if (openLastSet) {
+          const storedFrameSet = JSON.parse(
+            (await activeConnection.getItem("@explore#lastFrameSet")) ?? "[]"
+          );
+          // Clean the stored data - remove duplicates and invalid entries
+          openFrameSet = [...new Set(storedFrameSet)].filter(item => 
+            item && typeof item === 'string' && item.trim() !== ''
+          );
+          console.log('Cleaned and restored openFrameSet from storage:', openFrameSet);
+          console.log('openLastSet is:', openLastSet);
+        } else {
+          console.log('openLastSet is false, not restoring openFrameSet');
+        }
         async function saveLastSet() {
+          console.log('Saving last set. openLastSet:', openLastSet);
+          console.log('openSet:', openSet);
+          console.log('openFrameSet:', openFrameSet);
           if (openLastSet) {
             await activeConnection.setItem(
               "@explore#lastSet",
               JSON.stringify(openSet)
             );
+            await activeConnection.setItem(
+              "@explore#lastFrameSet",
+              JSON.stringify(openFrameSet)
+            );
+            console.log('Saved both sets to storage');
           } else {
             await activeConnection.removeItem("@explore#lastSet");
+            await activeConnection.removeItem("@explore#lastFrameSet");
+            console.log('Removed both sets from storage');
           }
         }
         function itemFilter(item) {
@@ -144,6 +352,7 @@ registerComponent(
         const actions = [
           "",
           "open in new tab",
+          "open in frame",
           "view",
           "edit",
           "copy",
@@ -166,6 +375,9 @@ registerComponent(
               return;
             case "open in new tab":
               open(item.name, "_blank");
+              break;
+            case "open in frame":
+              openInFrame(item.name);
               break;
             case "view":
               openItem(item.name);
@@ -277,15 +489,48 @@ registerComponent(
           (title) => toolbarRef.tab(title),
           reloadView
         );
+        await reloadView();
+        
         if (openLastSet) {
+          console.log('Restoring last set. openLastSet:', openLastSet);
           const lastSet = JSON.parse(
             (await activeConnection.getItem("@explore#lastSet")) ?? "[]"
           );
+          console.log('Restoring regular items:', lastSet);
           for (const item of lastSet) {
+            console.log('About to restore regular item:', item);
             await openItem(item);
+            console.log('Finished restoring regular item:', item);
           }
+          
+          // Add a small delay before restoring iframe tabs
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          const lastFrameSet = JSON.parse(
+            (await activeConnection.getItem("@explore#lastFrameSet")) ?? "[]"
+          );
+          console.log('Restoring iframe items:', lastFrameSet);
+          console.log('Current openFrameSet before restoration:', openFrameSet);
+          console.log('openLastSet during restoration:', openLastSet);
+          
+          for (const item of lastFrameSet) {
+            console.log('About to restore iframe item:', item);
+            await openInFrame(item, true); // Pass true for restoration
+            console.log('Finished restoring iframe item:', item);
+            console.log('openFrameSet after restoring item:', openFrameSet);
+            // Add a small delay between iframe restorations
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          
+          // Debug: Check what tabs are visible after restoration
+          const allTabs = document.querySelectorAll('[data-tab-title]');
+          console.log('All tabs after restoration:', allTabs);
+          console.log('Tab count:', allTabs.length);
+          console.log('Tab titles:', Array.from(allTabs).map(tab => tab.getAttribute('data-tab-title')));
+          console.log('Final openFrameSet:', openFrameSet);
+        } else {
+          console.log('Not restoring - openLastSet is false');
         }
-        await reloadView();
         const e = {
           element,
         };
