@@ -23,11 +23,18 @@ registerComponent(
   async function parsetemplate(doc, load) {
     return function (components) {
       function parseHtml(element, templateParts, params) {
-         // console.dir({
-         //   element,
-         //   templateParts,
-         //   params,
-         // });
+        if (params.length !== templateParts.length - 1) {
+          throw new Error(
+            `parseHtml expected ${templateParts - 1} params, got ${
+              params.length
+            }`
+          );
+        }
+        // console.dir({
+        //   element,
+        //   templateParts,
+        //   params,
+        // });
         let state = INIT;
         let buffer = "";
         let currentNode = element;
@@ -58,13 +65,15 @@ registerComponent(
           buffer = "";
           // console.log("FLUSH", trimmed);
           if (trimmed.length > 0) {
-            const textNode = doc.createTextNode(trimmed.replace(/&dquo;/g, "\""));
+            const textNode = doc.createTextNode(
+              trimmed.replace(/&dquo;/g, '"')
+            );
             currentNode.appendChild(textNode);
           }
         }
         let templateParam;
         for (let part = 0; part < templateParts.length; part++) {
-          let isPartParamConsumed = false
+          let isPartParamConsumed = false;
           const template = templateParts[part];
           // console.log(
           //   `about to parse this template part: ${template}`
@@ -85,8 +94,12 @@ registerComponent(
               continue;
             }
             // console.log(i, state, template[i], buffer)
-            if (part > 0 && typeof params[part - 1] === "string" && !isPartParamConsumed) {
-              buffer += params[part - 1]
+            if (
+              part > 0 &&
+              typeof params[part - 1] === "string" &&
+              !isPartParamConsumed
+            ) {
+              buffer += params[part - 1];
               flush();
               isPartParamConsumed = true;
             }
@@ -131,13 +144,17 @@ registerComponent(
                 switch (state) {
                   case ELEMENT_CONTENT:
                     flush();
-                    if (part > 0 && typeof params[part - 1] === "string" && !isPartParamConsumed) {
-                      buffer += params[part - 1]
+                    if (
+                      part > 0 &&
+                      typeof params[part - 1] === "string" &&
+                      !isPartParamConsumed
+                    ) {
+                      buffer += params[part - 1];
                       flush();
                       isPartParamConsumed = true;
                     }
                     state = ELEMENT_NAME;
-                    break
+                    break;
                   default:
                     state = ELEMENT_NAME;
                     flush();
@@ -223,9 +240,10 @@ registerComponent(
               case "=":
                 if (state !== ELEMENT_ATTRIBUTE_NAME) {
                   throw new SyntaxError(
-                    `(${state}) unexpected = at ${i}: ${template.substring(i, i + 20)}${
-                      template.length > i + 20 ? "..." : ""
-                    }`
+                    `(${state}) unexpected = at ${i}: ${template.substring(
+                      i,
+                      i + 20
+                    )}${template.length > i + 20 ? "..." : ""}`
                   );
                 }
                 attrName = buffer;

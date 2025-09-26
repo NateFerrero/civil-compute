@@ -16,7 +16,14 @@ registerComponent(
         ...components,
       });
       function printerComponent(element) {
-        function html(template, ...params) {
+        function html(templateParts, ...params) {
+          if (params.length !== templateParts.length - 1) {
+            throw new Error(
+              `html expected ${templateParts - 1} params, got ${
+                params.length
+              } - did you mean to call html\`\``
+            );
+          }
           components.tabs = tabsComponent({
             ...components,
             printer: printerComponent,
@@ -24,7 +31,7 @@ registerComponent(
           const outerContainer = doc.createElement("article");
           const container = doc.createElement("section");
           const subTabs = doc.createElement("section");
-          components.parseHtml(container, template, params);
+          components.parseHtml(container, templateParts, params);
           outerContainer.appendChild(container);
           outerContainer.appendChild(subTabs);
           element.appendChild(outerContainer);

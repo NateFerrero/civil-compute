@@ -18,10 +18,74 @@ registerComponent(
         function toHtml(text) {
           return text.replace(/\"/g, "&dquo;");
         }
-        async function openItem(name) {
-          openSet = [...openSet, name];
+        async function editItem(item) {
+          const { name } = item;
+          if (typeof name !== "string") {
+            return;
+          }
+          openSet = [...openSet, { name, type: "edit" }];
           async function onTabClose() {
-            openSet = openSet.filter((x) => x !== name);
+            openSet = openSet.filter((x) => x.name !== name);
+            await saveLastSet();
+          }
+          await saveLastSet();
+          async function submitEdit(e) {
+            e.preventDefault();
+            for (const inputElement of element.querySelectorAll("input")) {
+              inputElement.setAttribute("disabled", "disabled");
+            }
+            try {
+              const draftValue = e.target.elements.item(0).value;
+              await activeConnection.setItem(item.name, draftValue);
+              item.value = draftValue;
+              handleChange();
+              await reloadView();
+            } catch (e) {
+              console.error(e);
+              for (const inputElement of element.querySelectorAll("input")) {
+                inputElement.removeAttribute("disabled");
+              }
+            }
+          }
+          function handleChange() {
+            const draftValue = element
+              .querySelector("form")
+              .elements.item(0).value;
+            const saveButton = element.querySelector('input[type="submit"]');
+            if (draftValue === item.value) {
+              saveButton.disabled = true;
+              saveButton.disabled = false;
+              saveButton.disabled = true;
+              saveButton.setAttribute("disabled", "disabled");
+              saveButton.disabled = true;
+            } else {
+              saveButton.removeAttribute("disabled");
+            }
+          }
+          const editTab = toolbarRef.tab(`Edit ${item.name}`, onTabClose);
+          const itemTools = editTab.printer.html`<h3>Edit item</h3>
+            <h4>${toHtml(JSON.stringify(name))}</h4>
+             <form onsubmit=${submitEdit}>
+            <textarea name="value" value=${
+              item.value ?? ""
+            } onkeyup=${handleChange} onchange=${handleChange} />
+            <input type="submit" value="Save" />
+          </form>`;
+          await components.notes(
+            activeConnection,
+            "@explore#notes",
+            name,
+            itemTools.tab("Notes").element
+          );
+          handleChange();
+        }
+        async function viewItem({ name }) {
+          if (typeof name !== "string") {
+            return;
+          }
+          openSet = [...openSet, { name, type: "view" }];
+          async function onTabClose() {
+            openSet = openSet.filter((x) => x.name !== name);
             await saveLastSet();
           }
           await saveLastSet();
@@ -44,7 +108,7 @@ registerComponent(
             element.style.boxShadow = "";
           }
           const itemTools = toolbarRef.tab(
-            JSON.stringify(name),
+            `View ${name}`,
             onTabClose,
             onTabClick
           ).printer.html`
@@ -52,6 +116,12 @@ registerComponent(
                 <h4>${toHtml(JSON.stringify(name))}</h4>
                 <section style="word-wrap: anywhere; white-space: preserve;">${fullValue}</section>
               `;
+          const runLink = document.createElement("a");
+          runLink.classList.add("raw");
+          runLink.textContent = "run";
+          runLink.addEventListener("click", function () {
+            runItem({ name });
+          });
           const rawLink = document.createElement("a");
           rawLink.setAttribute("target", "_blank");
           rawLink.classList.add("raw");
@@ -61,6 +131,7 @@ registerComponent(
           externalFlag.textContent = "▜";
           rawLink.appendChild(externalFlag);
           rawLink.setAttribute("href", name);
+          itemTools.element.firstElementChild.appendChild(runLink);
           itemTools.element.firstElementChild.appendChild(rawLink);
           await components.notes(
             activeConnection,
@@ -68,6 +139,70 @@ registerComponent(
             name,
             itemTools.tab("Notes").element
           );
+        }
+        async function runItem({ name }) {
+          if (typeof name !== "string") {
+            return;
+          }
+          openSet = [...openSet, { name, type: "run" }];
+          async function onTabClose() {
+            openSet = openSet.filter((x) => x.name !== name);
+            await saveLastSet();
+          }
+          await saveLastSet();
+          const fullValue = await activeConnection.getItem(name);
+          async function onTabClick() {
+            const element = itemTools.element.parentElement;
+            element.scrollIntoView({ behavior: "smooth", block: "center" });
+            element.style.boxShadow = "inset 0 0 4px 4px #ff0";
+            await new Promise((r) => setTimeout(r, 140));
+            element.style.boxShadow = "inset 0 0 4px 4px #fe0";
+            await new Promise((r) => setTimeout(r, 130));
+            element.style.boxShadow = "inset 0 0 4px 4px #fd0";
+            await new Promise((r) => setTimeout(r, 120));
+            element.style.boxShadow = "inset 0 0 4px 4px #fc0";
+            await new Promise((r) => setTimeout(r, 110));
+            element.style.boxShadow = "inset 0 0 4px 4px #fb0";
+            await new Promise((r) => setTimeout(r, 100));
+            element.style.boxShadow = "inset 0 0 4px 4px #fa0";
+            await new Promise((r) => setTimeout(r, 1000));
+            element.style.boxShadow = "";
+          }
+          const itemTools = toolbarRef.tab(
+            `Run ${name}`,
+            onTabClose,
+            onTabClick
+          ).printer.html`
+                <h3>Run item</h3>
+                <h4>${toHtml(JSON.stringify(name))}</h4>
+              `;
+          const viewLink = document.createElement("a");
+          viewLink.classList.add("raw");
+          viewLink.textContent = "view";
+          viewLink.addEventListener("click", function () {
+            viewItem({ name });
+          });
+          const rawLink = document.createElement("a");
+          rawLink.setAttribute("target", "_blank");
+          rawLink.classList.add("raw");
+          rawLink.textContent = "raw";
+          const externalFlag = document.createElement("span");
+          externalFlag.classList.add("external");
+          externalFlag.textContent = "▜";
+          rawLink.appendChild(externalFlag);
+          rawLink.setAttribute("href", name);
+          itemTools.element.firstElementChild.appendChild(viewLink);
+          itemTools.element.firstElementChild.appendChild(rawLink);
+          await components.notes(
+            activeConnection,
+            "@explore#notes",
+            name,
+            itemTools.tab("Notes").element
+          );
+          console.dir({
+            itemTools,
+            todo: "crown script run and can return HTML element that is appended to itemTools",
+          });
         }
         let showSystemEntries = false;
         let openSet = [];
@@ -143,11 +278,12 @@ registerComponent(
         );
         const actions = [
           "",
-          "open in new tab",
-          "view",
-          "edit",
           "copy",
           "delete",
+          "edit",
+          "open (new tab)",
+          "run",
+          "view",
         ];
         const columns = [
           "!table:star",
@@ -164,62 +300,6 @@ registerComponent(
           switch (value) {
             case "":
               return;
-            case "open in new tab":
-              open(item.name, "_blank");
-              break;
-            case "view":
-              openItem(item.name);
-              break;
-            case "edit":
-              async function submitEdit(e) {
-                e.preventDefault();
-                for (const inputElement of element.querySelectorAll("input")) {
-                  inputElement.setAttribute("disabled", "disabled");
-                }
-                try {
-                  const draftValue = e.target.elements.item(0).value;
-                  await activeConnection.setItem(item.name, draftValue);
-                  item.value = draftValue;
-                  handleChange();
-                  await reloadView();
-                } catch (e) {
-                  console.error(e);
-                  for (const inputElement of element.querySelectorAll(
-                    "input"
-                  )) {
-                    inputElement.removeAttribute("disabled");
-                  }
-                }
-              }
-              function handleChange() {
-                const draftValue = element
-                  .querySelector("form")
-                  .elements.item(0).value;
-                const saveButton = element.querySelector(
-                  'input[type="submit"]'
-                );
-                if (draftValue === item.value) {
-                  saveButton.disabled = true;
-                  saveButton.disabled = false;
-                  saveButton.disabled = true;
-                  saveButton.setAttribute("disabled", "disabled");
-                  saveButton.disabled = true;
-                } else {
-                  saveButton.removeAttribute("disabled");
-                }
-              }
-              const editTab = toolbarRef.tab("Edit item");
-              editTab.printer.text(
-                `Edit item ${toHtml(JSON.stringify(item.name))}`
-              );
-              const { element } = editTab.printer.html`
-                <form onsubmit=${submitEdit}>
-                  <textarea name="value" value=${item.value} onkeyup=${handleChange} onchange=${handleChange} />
-                  <input type="submit" value="Save" />
-                </form>
-              `;
-              handleChange();
-              break;
             case "copy":
               prompt(item.name, item.value);
               break;
@@ -228,6 +308,18 @@ registerComponent(
                 await activeConnection.removeItem(item.name);
               }
               await reloadView();
+              break;
+            case "edit":
+              editItem(item);
+              break;
+            case "open (new tab)":
+              open(item.name, "_blank");
+              break;
+            case "run":
+              runItem(item);
+              break;
+            case "view":
+              viewItem(item);
               break;
           }
           e.target.value = "";
@@ -282,7 +374,17 @@ registerComponent(
             (await activeConnection.getItem("@explore#lastSet")) ?? "[]"
           );
           for (const item of lastSet) {
-            await openItem(item);
+            switch (item.type) {
+              case "edit":
+                await editItem(item);
+                break;
+              case "run":
+                await runItem(item);
+                break;
+              case "view":
+                await viewItem(item);
+                break;
+            }
           }
         }
         await reloadView();
